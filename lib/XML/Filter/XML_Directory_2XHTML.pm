@@ -41,9 +41,12 @@ XML::Filter::XML_Directory_2XHTML - SAX2 filter for munging XML::Directory::SAX 
  use XML::Directory::SAX;
  use XML::Filter::XML_Directory_2XHTML;
 
- my $file   = IO::File->new(">/htdocs/INC-0.html");
+ my $file   = IO::File->new(">/htdocs/myimages/index.html");
  my $writer = XML::SAX::Writer->new(Output=>$file);
  my $filter = XML::Filter::XML_Directory_2XHTML->new(Handler=>$writer);
+
+ # As Canadian as possible, under the circumstances
+ $filter->set_lang("en-ca");
 
  # Define some images to associate with directory listing.
 
@@ -82,12 +85,12 @@ XML::Filter::XML_Directory_2XHTML - SAX2 filter for munging XML::Directory::SAX 
  # XML::Filter::XML_Directory_Pruner which provides hooks for 
  # restricting the output of XML::Directory::SAX
 
- $filter->exclude(exclude=>["CVS"]);
+ $filter->exclude(ending=>[".html"]);
 
  my $directory = XML::Directory::SAX->new(depth=>0,detail=>2,Handler=>$filter);
 
  $directory->order_by("a");
- $directory->parse_dir($INC[0]);
+ $directory->parse_dir("/htdocs/myimages");
 
 =head1 DESCRIPTION
 
@@ -102,9 +105,9 @@ use Carp;
 use Exporter;
 use File::Basename;
 
-use XML::Filter::XML_Directory_2::Base;
+use XML::Filter::XML_Directory_2::Base '1.2';
 
-$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.0';
+$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.1';
 @XML::Filter::XML_Directory_2XHTML::ISA       = qw (Exporter XML::Filter::XML_Directory_2::Base);
 @XML::Filter::XML_Directory_2XHTML::EXPORT    = qw();
 @XML::Filter::XML_Directory_2XHTML::EXPORT_OK = qw ();
@@ -214,6 +217,17 @@ They can be altered by passing a user-defined CSS stylesheet via the filter's I<
 Object constructor. Returns an object. Woot!
 
 =cut
+
+=head2 $pkg->set_lang($lang)
+
+Set the language code to be assigned to the <html@xml:lang> and <html@lang> attributes.
+
+=cut
+
+sub set_lang {
+  my $self = shift;
+  $self->{__PACKAGE__.'__lang'} = $_[0];
+}
 
 =head2 $pkg->set_images(\%args)
 
@@ -598,7 +612,14 @@ sub start_document {
 
   $self->SUPER::start_prefix_mapping({Prefix => "",
 				     NamespaceURI => "http://www.w3.org/1999/xhtml"});
-  $self->SUPER::start_element({Name=>DTD_HTML_ROOT,__PACKAGE__->attributes(lang=>"en-ca","xml:lang"=>"en-ca")});
+
+  my %attrs = ();
+
+  if (my $lang = $self->{__PACKAGE__.'__lang'}) {
+    %attrs = __PACKAGE__->attributes(lang=>$lang,"xml:lang"=>$lang);
+  }
+
+  $self->SUPER::start_element({Name=>DTD_HTML_ROOT,%attrs});
   $self->SUPER::end_prefix_mapping({Prefix=>""});
 
   return 1;
@@ -669,7 +690,7 @@ sub end_element {
 
     #
 
-    my $title = $self->build_uri();
+    my $title = $self->current_location() || &basename($self->build_uri($data));
 
     if (my $c = $self->get_callback("title")) {
       $title = &$c();
@@ -717,11 +738,11 @@ sub characters {
 
 =head1 VERSION
 
-1.0
+1.1
 
 =head1 DATE
 
-July 02, 2002
+July 03, 2002
 
 =head1 AUTHOR
 
@@ -738,10 +759,6 @@ Add hooks to set <meta> tags
 =item *
 
 Add hooks to set <link> tags
-
-=item *
-
-Add hooks to set <html@lang> attribute
 
 =back
 

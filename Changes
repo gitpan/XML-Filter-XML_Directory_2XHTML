@@ -1,5 +1,13 @@
 Revision history for Perl extension XML::Filter::XML_Directory_2XHTML
 
+1.1	 Wed Jul 03 2002
+
+	 - Added $pkg->set_lang()
+
+	 - Updated <head> handler to be more discreet about what the default document title should be. Now prints current location relative to directory root or the basename for the document root itself.
+
+	 - Upped required version for XML::Filter::XML_Directory_2XHTML
+
 1.0	 Tue Jul 02 2002
 
 	 - Initial revision

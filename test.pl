@@ -72,7 +72,9 @@ sub t2 {
     print "not ok 2\n";
     return 0;
   }
-  
+
+  $filter->set_lang("en-uk");
+
   if (! $filter->set_images({
 			     directory   => {src=>"/icons/dir.gif",height=>20,width=>20},
 			     application => {src=>"/icons/generic.gif",height=>20,width=>20},

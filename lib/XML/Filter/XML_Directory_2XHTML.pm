@@ -105,9 +105,9 @@ use Carp;
 use Exporter;
 use File::Basename;
 
-use XML::Filter::XML_Directory_2::Base '1.2';
+use XML::Filter::XML_Directory_2::Base '1.4';
 
-$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.1';
+$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.2';
 @XML::Filter::XML_Directory_2XHTML::ISA       = qw (Exporter XML::Filter::XML_Directory_2::Base);
 @XML::Filter::XML_Directory_2XHTML::EXPORT    = qw();
 @XML::Filter::XML_Directory_2XHTML::EXPORT_OK = qw ();
@@ -251,7 +251,7 @@ I<string> - the value returned by the I<MIME::Types::mediaType> function for a d
 
 =back
 
-Each key defines it own hash reference whose keys are :
+Each key defines a value which is also a hash reference whose keys are :
 
 =over
 
@@ -281,6 +281,10 @@ String.
 
 =back
 
+Alternately, you may pass a code reference as the key value. If you do, your code reference wil be passed the absolute path of the current file as the first, and only, argument.
+
+Your code reference should return a hash reference whose key/value pairs are the same as those outlined above.
+
 =cut
 
 sub set_images {
@@ -293,8 +297,15 @@ sub set_images {
   }
 
   foreach my $img (keys %$args) {
-    if (ref($args->{$img}) ne "HASH") {
-      carp "Images must be passed as a hash ref of hash references.";
+    my $ref = ref($args->{$img});
+
+    unless ($ref =~ /^(HASH|CODE)$/) {
+      carp "Images must be passed as a hash ref of hash references or code references.";
+      next;
+    }
+
+    if ($ref eq "CODE") {
+      $self->{'__images'}{$img} = $args->{$img};
       next;
     }
 
@@ -490,7 +501,7 @@ sub _stylesheets {
 							  }});
     $self->SUPER::end_element({Name=>"link"});
   }
- 
+
   return 1;
 }
 
@@ -520,7 +531,7 @@ sub _scripts {
 sub _image {
   my $self = shift;
   my $type = shift;
-  my $alt  = shift;
+  my $data = shift;
 
   if (! $type) {
     return 0;
@@ -530,6 +541,17 @@ sub _image {
 
   if (! $src) {
     return 0;
+  }
+
+  if (ref($src) eq "CODE") {
+    $src = &$src($self->build_uri($data));
+
+    if (ref($src) ne "HASH") { return 0; }
+
+    foreach ("src","height","width") {
+      if (! $src->{$_}) { return 0; }
+    }
+
   }
 
   $self->SUPER::start_element({Name=>"img",Attributes=>{
@@ -648,7 +670,9 @@ sub start_element {
   my $self = shift;
   my $data = shift;
 
-  $self->on_enter_start_element($data) || return 0;
+  if (! $self->on_enter_start_element($data)) {
+    return 0;
+  }
 
   if ($data->{Name} =~ /^(file|directory)$/) {
     my $name = lc $1;

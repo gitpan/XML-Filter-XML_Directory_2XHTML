@@ -105,9 +105,9 @@ use Carp;
 use Exporter;
 use File::Basename;
 
-use XML::Filter::XML_Directory_2::Base '1.4.1';
+use XML::Filter::XML_Directory_2::Base '1.4.2';
 
-$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.2.1';
+$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.3';
 @XML::Filter::XML_Directory_2XHTML::ISA       = qw (Exporter XML::Filter::XML_Directory_2::Base);
 @XML::Filter::XML_Directory_2XHTML::EXPORT    = qw();
 @XML::Filter::XML_Directory_2XHTML::EXPORT_OK = qw ();
@@ -208,7 +208,18 @@ The default CSS styles for those classes are :
         margin-bottom:10px;
         }
 
-They can be altered by passing a user-defined CSS stylesheet via the filter's I<set_styles> object method.
+ .thumbnail { display: inline; }
+
+They can be altered by passing a user-defined CSS stylesheet via the filter's I<set_styles> object method. You may also use the I<set_style> method to override the default and assign styles via the HTML <style> element.
+
+Example HTML output:
+
+ <div class = "(file|directory)" id = "...">
+  <div class = "thumbnail">
+   <img src = "..." />
+  </div>
+  <a href = "...">Hello World picture</a>
+ </div>
 
 =head1 OBJECT METHODS
 
@@ -382,6 +393,21 @@ sub set_styles {
   return 1;
 }
 
+=head2 $pkg->set_style(\$css)
+
+You may use this method to override the default styles altogether without also assigning remote stylesheets.
+
+ $pkg->set_style(\qq(.file{ border:2px dotted pink};));
+
+=cut
+
+sub set_style {
+  my $self = shift;
+  if (ref($_[0]) eq "SCALAR") {
+    $self->{__PACKAGE__.'__css'} = $_[0];
+  }
+}
+
 =head2 $pkg->set_scripts(\@scripts)
 
 Define scripts for your document.
@@ -448,7 +474,12 @@ sub _stylesheets {
 					   },
 			      });
 
-  $self->comment({Data=>qq(
+  if ($self->{__PACKAGE__.'__css'}) {
+    $self->comment({Data=>${$self->{__PACKAGE__.'__css'}}});
+  }
+
+  else {
+    $self->comment({Data=>qq(
 .file { 
          border:1px dotted #ccc;
          margin-left:10px;
@@ -461,7 +492,10 @@ sub _stylesheets {
         margin-left:10px;
         margin-bottom:10px;
         }
+ .thumbnail { display:inline; }
+
 )});
+  }
 
   $self->SUPER::end_element({Name=>"style"});
 
@@ -554,6 +588,7 @@ sub _image {
 
   }
 
+  $self->SUPER::start_element({Name=>"div",__PACKAGE__->attributes(class=>"thumbnail")});
   $self->SUPER::start_element({Name=>"img",Attributes=>{
 							"{}src"  => {Name=>"src",
 								     Value=>$src->{'src'},
@@ -577,6 +612,7 @@ sub _image {
 								       NameSpaceURI=>""},
 						       }});
   $self->SUPER::end_element({Name=>"img"});
+  $self->SUPER::end_element({Name=>"div"});
   return 1;
 }
 
@@ -762,11 +798,11 @@ sub characters {
 
 =head1 VERSION
 
-1.2.1
+1.3
 
 =head1 DATE
 
-July 07, 2002
+July 08, 2002
 
 =head1 AUTHOR
 

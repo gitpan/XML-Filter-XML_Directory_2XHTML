@@ -7,7 +7,7 @@ WriteMakefile(
 	       ABSTRACT => '') : (),
 	      'VERSION_FROM' => 'lib/XML/Filter/XML_Directory_2XHTML.pm',
 	      'PREREQ_PM'    => {
-				 XML::Filter::XML_Directory_2::Base => '1.4',
+				 XML::Filter::XML_Directory_2::Base => '1.4.2',
 				 Carp                               => '0',
 				 File::Basename                     => '0',
 				},

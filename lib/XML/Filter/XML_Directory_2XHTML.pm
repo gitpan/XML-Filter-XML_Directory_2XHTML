@@ -45,6 +45,8 @@ XML::Filter::XML_Directory_2XHTML - SAX2 filter for munging XML::Directory::SAX 
  my $writer = XML::SAX::Writer->new(Output=>$file);
  my $filter = XML::Filter::XML_Directory_2XHTML->new(Handler=>$writer);
 
+ $filter->set_encoding("ISO-8858-1");
+
  # As Canadian as possible, under the circumstances
  $filter->set_lang("en-ca");
 
@@ -105,9 +107,9 @@ use Carp;
 use Exporter;
 use File::Basename;
 
-use XML::Filter::XML_Directory_2::Base '1.4.2';
+use XML::Filter::XML_Directory_2::Base '1.4.4';
 
-$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.3';
+$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.3.1';
 @XML::Filter::XML_Directory_2XHTML::ISA       = qw (Exporter XML::Filter::XML_Directory_2::Base);
 @XML::Filter::XML_Directory_2XHTML::EXPORT    = qw();
 @XML::Filter::XML_Directory_2XHTML::EXPORT_OK = qw ();
@@ -578,7 +580,7 @@ sub _image {
   }
 
   if (ref($src) eq "CODE") {
-    $src = &$src($self->build_uri($data).$self->current_location());
+    $src = &$src($self->build_uri($data)."/".&basename($self->current_location()));
 
     if (ref($src) ne "HASH") { return 0; }
 
@@ -627,11 +629,11 @@ sub _link {
 
   #
 
-  if (my $h = $self->get_handler("linktext")) {
+  if (my $h = $self->retrieve_handler("linktext")) {
     $self->SUPER::characters({Data=>$h->parse_uri($self->build_uri($data))});
   }
   
-  elsif (my $c = $self->get_callback("linktext")) {
+  elsif (my $c = $self->retrieve_callback("linktext")) {
     $self->SUPER::characters({Data=>&$c(
 					$self->build_uri($data),
 					$data->{Attributes}->{'{}name'}->{Value}
@@ -662,10 +664,12 @@ sub start_document {
   my $self = shift;
   $self->SUPER::start_document();
 
-  $self->SUPER::xml_decl({Version=>"1.0"});
-  $self->SUPER::start_dtd({Name=>DTD_HTML_ROOT,
-			   PublicId=>DTD_HTML_PUBLICID,
-			   SystemId=>DTD_HTML_SYSTEMID});
+  $self->SUPER::xml_decl({Version  => "1.0",
+			  Encoding => $self->encoding()});
+
+  $self->SUPER::start_dtd({Name     => DTD_HTML_ROOT,
+			   PublicId => DTD_HTML_PUBLICID,
+			   SystemId => DTD_HTML_SYSTEMID});
   $self->SUPER::end_dtd();
 
   $self->SUPER::start_prefix_mapping({Prefix => "",
@@ -724,11 +728,11 @@ sub start_element {
     $self->_image($type);
     $self->_link($data);
 
-    if (my $h = $self->get_handler($name)) {
+    if (my $h = $self->retrieve_handler($name)) {
       $h->parse_uri($self->build_uri($data));
     }
 
-    elsif (my $c = $self->get_callback($name)) {
+    elsif (my $c = $self->retrieve_callback($name)) {
       $self->SUPER::characters({Data=>&$c($self->build_uri($data))});
     }
 
@@ -752,7 +756,7 @@ sub end_element {
 
     my $title = $self->current_location() || &basename($self->build_uri($data));
 
-    if (my $c = $self->get_callback("title")) {
+    if (my $c = $self->retrieve_callback("title")) {
       $title = &$c();
     }
 
@@ -798,11 +802,11 @@ sub characters {
 
 =head1 VERSION
 
-1.3
+1.3.1
 
 =head1 DATE
 
-July 08, 2002
+July 22, 2002
 
 =head1 AUTHOR
 

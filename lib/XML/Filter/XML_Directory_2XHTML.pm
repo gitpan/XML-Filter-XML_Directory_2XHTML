@@ -105,9 +105,9 @@ use Carp;
 use Exporter;
 use File::Basename;
 
-use XML::Filter::XML_Directory_2::Base '1.4';
+use XML::Filter::XML_Directory_2::Base '1.4.1';
 
-$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.2';
+$XML::Filter::XML_Directory_2XHTML::VERSION   = '1.2.1';
 @XML::Filter::XML_Directory_2XHTML::ISA       = qw (Exporter XML::Filter::XML_Directory_2::Base);
 @XML::Filter::XML_Directory_2XHTML::EXPORT    = qw();
 @XML::Filter::XML_Directory_2XHTML::EXPORT_OK = qw ();
@@ -544,7 +544,7 @@ sub _image {
   }
 
   if (ref($src) eq "CODE") {
-    $src = &$src($self->build_uri($data));
+    $src = &$src($self->build_uri($data).$self->current_location());
 
     if (ref($src) ne "HASH") { return 0; }
 
@@ -762,11 +762,11 @@ sub characters {
 
 =head1 VERSION
 
-1.1
+1.2.1
 
 =head1 DATE
 
-July 03, 2002
+July 07, 2002
 
 =head1 AUTHOR
 

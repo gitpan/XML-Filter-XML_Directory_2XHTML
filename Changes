@@ -1,5 +1,9 @@
 Revision history for Perl extension XML::Filter::XML_Directory_2XHTML
 
+1.2.1	 Sun Jul 07 2002
+
+	 - Upped required version of XML::Filter::XML_Directory_2::Base to 1.4.1
+	 
 1.2	 Fri Jul 05 2002
 
 	 - Added options for passing a code reference to $pkg->set_images()
